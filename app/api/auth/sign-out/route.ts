@@ -1,9 +1,3 @@
-import { auth } from "@/app/auth";
-import { redirect } from "next/navigation";
+import { accountAuthUnavailable } from "@/app/auth";
 
-export async function POST() {
-  await auth.api.signOut({
-    headers: new Headers(),
-  });
-  redirect("/login");
-}
+export const POST = accountAuthUnavailable;

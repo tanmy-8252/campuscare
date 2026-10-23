@@ -28,7 +28,6 @@ import {
   LayoutDashboard,
   Leaf,
   LoaderCircle,
-  LogOut,
   MapPin,
   Menu,
   Plus,
@@ -148,7 +147,6 @@ function CategoryIcon({ category }: { category: Category }) {
     </span>
   );
 }
-<<<<<<< HEAD
 function PhotoField({
   target,
   photo,
@@ -199,29 +197,10 @@ function PhotoField({
 }
 
 export default function CampusApp() {
-=======
-interface CampusAppProps {
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    emailVerified: boolean;
-    role: "resident" | "worker" | "admin";
-    chatGptUserId: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-  };
-}
-
-export default function CampusApp({ user }: CampusAppProps) {
->>>>>>> d998994 (first commit)
   const [data, setData] = useState<Data | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
-  // Real role from authentication (used for actual authorization)
-  const realRole = user.role;
-  // Preview role for demo purposes (does not grant real permissions)
-  const [previewRole, setPreviewRole] = useState<Role>(realRole),
+  const [role, setRole] = useState<Role>("admin"),
     [view, setView] = useState("overview"),
     [workerId, setWorkerId] = useState("w1");
   const [query, setQuery] = useState(""),
@@ -403,9 +382,9 @@ export default function CampusApp({ user }: CampusAppProps) {
   const myIssues = issues.filter((i) => i.reporter === "You"),
     jobs = issues.filter((i) => i.workerId === workerId);
   let base =
-    previewRole === "worker"
+    role === "worker"
       ? jobs
-      : previewRole === "resident" && view === "my-reports"
+      : role === "resident" && view === "my-reports"
         ? myIssues
         : issues;
   const filtered = base.filter(
@@ -425,7 +404,7 @@ export default function CampusApp({ user }: CampusAppProps) {
   );
   const preview = filtered.slice(0, 6);
   const nav =
-    previewRole === "admin"
+    role === "admin"
       ? [
           { id: "overview", label: "Overview", icon: LayoutDashboard },
           { id: "issues", label: "All issues", icon: ClipboardList },
@@ -437,7 +416,7 @@ export default function CampusApp({ user }: CampusAppProps) {
             icon: ChartNoAxesCombined,
           },
         ]
-      : previewRole === "resident"
+      : role === "resident"
         ? [
             { id: "overview", label: "Campus feed", icon: LayoutDashboard },
             { id: "my-reports", label: "My reports", icon: ClipboardList },
@@ -669,9 +648,9 @@ export default function CampusApp({ user }: CampusAppProps) {
           <ShieldCheck size={15} />
         </div>
         <div className="nav-label">
-          {previewRole === "admin"
+          {role === "admin"
             ? "CAMPUS MANAGEMENT"
-            : previewRole === "worker"
+            : role === "worker"
               ? "MAINTENANCE WORKSPACE"
               : "YOUR CAMPUS"}
         </div>
@@ -686,7 +665,7 @@ export default function CampusApp({ user }: CampusAppProps) {
               <span>{label}</span>
               {id === "issues" && (
                 <b>
-                  {previewRole === "worker"
+                  {role === "worker"
                     ? jobs.filter((i) => !closed(i)).length
                     : active.length}
                 </b>
@@ -721,27 +700,18 @@ export default function CampusApp({ user }: CampusAppProps) {
             <ArrowDownToLine size={15} />
           </button>
           <div className="sidebar-footer">
-            <span className="avatar">{initials(user.name || user.email)}</span>
+            <span className="avatar">TP</span>
             <div>
-              <strong>{user.name || user.email}</strong>
+              <strong>Your demo workspace</strong>
               <small>
-                {realRole === "admin"
+                {role === "admin"
                   ? "Campus administrator"
-                  : realRole === "worker"
+                  : role === "worker"
                     ? "Maintenance team"
                     : "Campus member"}
-                {realRole !== previewRole && (
-                  <span className="preview-badge"> · Preview: {previewRole}</span>
-                )}
               </small>
             </div>
-            <button
-              className="icon-btn"
-              onClick={() => window.location.href = "/api/auth/sign-out"}
-              aria-label="Sign out"
-            >
-              <LogOut size={18} />
-            </button>
+            <span className="online-dot" />
           </div>
         </div>
       </aside>
@@ -784,15 +754,15 @@ export default function CampusApp({ user }: CampusAppProps) {
             <div className="header-divider" />
             <label className="role-picker">
               <span className="avatar small">
-                {previewRole === "admin" ? "AD" : previewRole === "worker" ? "WK" : "ST"}
+                {role === "admin" ? "AD" : role === "worker" ? "WK" : "ST"}
               </span>
               <span>
-                <small>PREVIEW AS (Demo)</small>
+                <small>PREVIEW AS</small>
                 <select
                   aria-label="Preview role"
-                  value={previewRole}
+                  value={role}
                   onChange={(e) => {
-                    setPreviewRole(e.target.value as Role);
+                    setRole(e.target.value as Role);
                     navigate("overview");
                     setSelectedId(null);
                   }}
@@ -809,9 +779,9 @@ export default function CampusApp({ user }: CampusAppProps) {
           <div className="prototype-strip">
             <span>
               <Sparkles size={13} />
-              CampusCare
+              Hackathon prototype
             </span>
-            <p>Your campus workspace · role preview for demo purposes only.</p>
+            <p>Sample data · switch roles to try the full reporting journey.</p>
             <button onClick={() => setModal("about")}>
               How it works <ArrowRight size={13} />
             </button>
@@ -832,26 +802,26 @@ export default function CampusApp({ user }: CampusAppProps) {
           <section className="page-heading">
             <div>
               <div className="eyebrow">
-                {previewRole === "admin"
+                {role === "admin"
                   ? "YOUR CAMPUS, CONNECTED"
-                  : previewRole === "worker"
+                  : role === "worker"
                     ? "EVERY FIX MAKES A DIFFERENCE"
                     : "SEE SOMETHING? SAY SOMETHING."}
               </div>
               <h1>
                 {view === "overview"
-                  ? previewRole === "admin"
+                  ? role === "admin"
                     ? "Campus overview"
-                    : previewRole === "worker"
+                    : role === "worker"
                       ? "Let’s make things better."
                       : "A better campus starts here."
                   : label}
               </h1>
               <p>
                 {view === "overview"
-                  ? previewRole === "admin"
+                  ? role === "admin"
                     ? "A little care. A better campus. Keep every issue moving forward."
-                    : previewRole === "worker"
+                    : role === "worker"
                       ? "Your assigned jobs, all in one place."
                       : "Report a problem, follow the fix, and make a difference."
                   : view === "issues"
@@ -880,7 +850,7 @@ export default function CampusApp({ user }: CampusAppProps) {
           ) : (
             data && (
               <>
-                {previewRole === "worker" && (
+                {role === "worker" && (
                   <div className="worker-picker">
                     <HardHat size={18} />
                     <label>
@@ -901,7 +871,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                 )}
                 {(view === "overview" || view === "analytics") && (
                   <>
-                    {previewRole === "admin" && view === "overview" && (
+                    {role === "admin" && view === "overview" && (
                       <section className="welcome-card">
                         <div className="welcome-copy">
                           <span className="welcome-pill">
@@ -963,7 +933,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                       </section>
                     )}
                     <section className="stats-grid">
-                      {(previewRole === "admin"
+                      {(role === "admin"
                         ? [
                             {
                               title: "Total issues",
@@ -1005,7 +975,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                               filter: "Completed",
                             },
                           ]
-                        : previewRole === "worker"
+                        : role === "worker"
                           ? [
                               {
                                 title: "My assigned jobs",
@@ -1098,7 +1068,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                             key={title}
                             onClick={() => {
                               navigate(
-                                previewRole === "resident" &&
+                                role === "resident" &&
                                   title !== "Campus issues fixed"
                                   ? "my-reports"
                                   : "issues",
@@ -1121,7 +1091,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                         ),
                       )}
                     </section>
-                    {previewRole === "admin" && (
+                    {role === "admin" && (
                       <div className="insights-grid">
                         <section className="panel chart-panel">
                           <div className="panel-heading">
@@ -1221,16 +1191,16 @@ export default function CampusApp({ user }: CampusAppProps) {
                       <div>
                         <h2>
                           {view === "overview"
-                            ? previewRole === "worker"
+                            ? role === "worker"
                               ? "Your latest jobs"
                               : "Recent issues"
-                            : previewRole === "resident" && view === "my-reports"
+                            : role === "resident" && view === "my-reports"
                               ? "My reported issues"
                               : "Issue directory"}
                           <span className="count-pill">{filtered.length}</span>
                         </h2>
                         <p>
-                          {previewRole === "worker"
+                          {role === "worker"
                             ? "Pick a job, update progress, and share the fix."
                             : "Every report brings us one step closer to a better campus."}
                         </p>
@@ -1844,7 +1814,7 @@ export default function CampusApp({ user }: CampusAppProps) {
               </div>
             </div>
           )}
-          {previewRole === "admin" && !closed(selected) && (
+          {role === "admin" && !closed(selected) && (
             <form
               className="action-box"
               key={selected.id + selected.workerId}
@@ -1912,7 +1882,7 @@ export default function CampusApp({ user }: CampusAppProps) {
               </button>
             </form>
           )}
-          {previewRole === "worker" &&
+          {role === "worker" &&
             selected.workerId === workerId &&
             selected.status === "Assigned" && (
               <button
@@ -1929,7 +1899,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                 Start working
               </button>
             )}
-          {previewRole === "worker" &&
+          {role === "worker" &&
             selected.workerId === workerId &&
             selected.status === "In progress" && (
               <form
@@ -1980,7 +1950,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                 </button>
               </form>
             )}
-          {previewRole === "resident" &&
+          {role === "resident" &&
             selected.reporter !== "You" &&
             !closed(selected) && (
               <button
@@ -1997,7 +1967,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                 I’m affected by this too
               </button>
             )}
-          {previewRole === "resident" &&
+          {role === "resident" &&
             selected.reporter === "You" &&
             selected.status === "Resolved" && (
               <button
@@ -2014,7 +1984,7 @@ export default function CampusApp({ user }: CampusAppProps) {
                 Confirm the problem is fixed
               </button>
             )}
-          {previewRole === "resident" &&
+          {role === "resident" &&
             selected.reporter === "You" &&
             closed(selected) && (
               <form

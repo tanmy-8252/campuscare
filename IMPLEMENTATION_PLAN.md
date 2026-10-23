@@ -1,3 +1,5 @@
+> **Status — 23 October 2026:** Account authentication is deferred. The live Vercel app uses demo sessions and private Blob storage. This is an unverified historical draft describing an earlier Cloudflare architecture. See `docs/deferred-auth/README.md` before implementing it.
+
 # CampusCare Individual Authentication Implementation Plan
 
 ## Current Architecture Analysis

@@ -1,13 +1,6 @@
 import { z } from "zod";
-<<<<<<< HEAD
 import { getDemoUser } from "@/app/demo-session";
 import { readWorkspace, saveWorkspace } from "@/lib/workspace-store";
-=======
-import { getDb } from "@/db";
-import { workspaces, users } from "@/db/schema";
-import { getSession } from "@/app/auth";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
->>>>>>> d998994 (first commit)
 import { categories, zones, seedWorkspace, type Workspace } from "@/app/domain";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -50,127 +43,9 @@ const actionSchema = z.discriminatedUnion("action", [
     phone: z.string().trim().max(30),
   }),
 ]);
-<<<<<<< HEAD
 function validPhoto(value: string | null | undefined) {
   if (!value) return true;
   const cloud = process.env.CLOUDINARY_CLOUD_NAME;
-=======
-
-/**
- * Get the authenticated user from either individual auth (Better Auth) or ChatGPT OAuth
- * Returns { userId, internalUserId, email, name } or null
- */
-async function getAuthenticatedUser(): Promise<{
-  userId: string;
-  internalUserId: string;
-  email: string;
-  name: string | null;
-} | null> {
-  // Try individual auth (Better Auth) first
-  const session = await getSession();
-  if (session?.user) {
-    const db = getDb();
-    const userRecord = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-        chatGptUserId: users.chatGptUserId,
-      })
-      .from(users)
-      .where(eq(users.id, session.user.id))
-      .limit(1);
-
-    if (userRecord[0]) {
-      return {
-        userId: userRecord[0].chatGptUserId || session.user.id,
-        internalUserId: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-      };
-    }
-  }
-
-  // Fall back to ChatGPT OAuth
-  const chatGPTUser = await getChatGPTUser();
-  if (chatGPTUser) {
-    // Check if this ChatGPT user has a linked internal account
-    const db = getDb();
-    const userRecord = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        name: users.name,
-      })
-      .from(users)
-      .where(eq(users.chatGptUserId, chatGPTUser.userId))
-      .limit(1);
-
-    if (userRecord[0]) {
-      return {
-        userId: chatGPTUser.userId,
-        internalUserId: userRecord[0].id,
-        email: chatGPTUser.email,
-        name: chatGPTUser.fullName ?? chatGPTUser.displayName,
-      };
-    }
-
-    // Legacy: use ChatGPT user ID directly
-    return {
-      userId: chatGPTUser.userId,
-      internalUserId: chatGPTUser.userId,
-      email: chatGPTUser.email,
-      name: chatGPTUser.fullName ?? chatGPTUser.displayName,
-    };
-  }
-
-  return null;
-}
-
-async function getRecord(userId: string, internalUserId?: string) {
-  const db = getDb();
-
-  // First try to find workspace by internal user ID (new system)
-  if (internalUserId) {
-    let record = (
-      await db.select().from(workspaces).where(eq(workspaces.userId, internalUserId))
-    )[0];
-
-    if (!record) {
-      // Create new workspace linked to internal user
-      await db
-        .insert(workspaces)
-        .values({ ownerId: userId, userId: internalUserId, data: JSON.stringify(seedWorkspace()), version: 0 })
-        .onConflictDoNothing();
-      record = (
-        await db.select().from(workspaces).where(eq(workspaces.userId, internalUserId))
-      )[0];
-    }
-    return record;
-  }
-
-  // Legacy: find by ChatGPT user ID (ownerId)
-  let record = (
-    await db.select().from(workspaces).where(eq(workspaces.ownerId, userId))
-  )[0];
-
-  if (!record) {
-    await db
-      .insert(workspaces)
-      .values({ ownerId: userId, data: JSON.stringify(seedWorkspace()), version: 0 })
-      .onConflictDoNothing();
-    record = (
-      await db.select().from(workspaces).where(eq(workspaces.ownerId, userId))
-    )[0];
-  }
-
-  return record;
-}
-
-function validPhoto(value: string | null | undefined) {
-  if (!value) return true;
-  const cloud = (env as unknown as Record<string, string>).CLOUDINARY_CLOUD_NAME;
->>>>>>> d998994 (first commit)
   if (!cloud) return false;
   try {
     const u = new URL(value);
@@ -183,9 +58,7 @@ function validPhoto(value: string | null | undefined) {
     return false;
   }
 }
-
 export async function GET() {
-<<<<<<< HEAD
   const user = await getDemoUser(true);
   if (!user)
     return json({ error: "Open the app to start a demo session." }, 401);
@@ -194,16 +67,6 @@ export async function GET() {
     const e = process.env;
     return json({
       ...r.data,
-=======
-  const authUser = await getAuthenticatedUser();
-  if (!authUser) return json({ error: "Sign in to open your workspace." }, 401);
-
-  try {
-    const record = await getRecord(authUser.userId, authUser.internalUserId);
-    const e = env as unknown as Record<string, string>;
-    return json({
-      ...JSON.parse(record.data),
->>>>>>> d998994 (first commit)
       cloudinaryReady: !!(
         e.CLOUDINARY_CLOUD_NAME &&
         e.CLOUDINARY_API_KEY &&
@@ -217,47 +80,31 @@ export async function GET() {
     );
   }
 }
-
 export async function POST(req: Request) {
-<<<<<<< HEAD
   const user = await getDemoUser();
   if (!user)
     return json({ error: "Open the app to start a demo session." }, 401);
-=======
-  const authUser = await getAuthenticatedUser();
-  if (!authUser) return json({ error: "Sign in to make changes." }, 401);
-
->>>>>>> d998994 (first commit)
   if (
     req.headers.get("origin") &&
     req.headers.get("origin") !== new URL(req.url).origin
   )
     return json({ error: "Request origin rejected." }, 403);
-
   let a: z.infer<typeof actionSchema>;
   try {
     a = actionSchema.parse(await req.json());
   } catch {
     return json({ error: "Please check the required fields." }, 400);
   }
-
   if ("photo" in a && !validPhoto(a.photo))
     return json(
       { error: "Please upload a photo through Cloudinary first." },
       400,
     );
-
   try {
     for (let attempt = 0; attempt < 4; attempt++) {
-<<<<<<< HEAD
       const record = await readWorkspace(user.userId);
       const data: Workspace = record.data;
-=======
-      const record = await getRecord(authUser.userId, authUser.internalUserId);
-      const data: Workspace = JSON.parse(record.data);
->>>>>>> d998994 (first commit)
       const at = new Date().toISOString();
-
       if (a.action === "create") {
         const next =
           Math.max(
@@ -331,9 +178,7 @@ export async function POST(req: Request) {
           issue.completionPhoto = a.photo ?? null;
           message = "Repair completed: " + a.note;
         } else if (a.action === "confirm") {
-          // For individual auth, check if the current user is the reporter
-          const isReporter = issue.reporter === "You" || issue.reporter === authUser.email || issue.reporter === authUser.name;
-          if (!isReporter || issue.status !== "Resolved")
+          if (issue.reporter !== "You" || issue.status !== "Resolved")
             return json(
               { error: "Only your resolved reports can be confirmed." },
               409,
@@ -341,9 +186,8 @@ export async function POST(req: Request) {
           issue.status = "Confirmed";
           message = "Reporter confirmed the repair";
         } else if (a.action === "reopen") {
-          const isReporter = issue.reporter === "You" || issue.reporter === authUser.email || issue.reporter === authUser.name;
           if (
-            !isReporter ||
+            issue.reporter !== "You" ||
             !["Resolved", "Confirmed"].includes(issue.status)
           )
             return json(
@@ -359,38 +203,21 @@ export async function POST(req: Request) {
               { error: "This issue has already been completed." },
               409,
             );
-          const isReporter = issue.reporter === "You" || issue.reporter === authUser.email || issue.reporter === authUser.name;
-          if (isReporter)
+          if (issue.reporter === "You")
             return json({ error: "You already reported this issue." }, 400);
-          if (issue.supporters.includes(authUser.userId))
+          if (issue.supporters.includes(user.userId))
             return json(
               { error: "You have already supported this report." },
               409,
             );
-          issue.supporters.push(authUser.userId);
+          issue.supporters.push(user.userId);
           message = "Another campus member is affected";
         }
         issue.updatedAt = at;
         issue.history.push({ text: message, at });
       }
-<<<<<<< HEAD
       if (await saveWorkspace(user.userId, data, record.version))
         return json({ ok: true });
-=======
-
-      const result = await getDb()
-        .update(workspaces)
-        .set({ data: JSON.stringify(data), version: record.version + 1 })
-        .where(
-          and(
-            eq(workspaces.userId, authUser.internalUserId),
-            eq(workspaces.version, record.version),
-          ),
-        )
-        .returning({ version: workspaces.version });
-
-      if (result.length) return json({ ok: true });
->>>>>>> d998994 (first commit)
     }
     return json({ error: "The workspace changed. Please retry." }, 409);
   } catch {
