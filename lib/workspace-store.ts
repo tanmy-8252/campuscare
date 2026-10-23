@@ -1,4 +1,4 @@
-import { get, put, BlobPreconditionFailedError } from "@vercel/blob";
+import { get, head, put, BlobNotFoundError, BlobPreconditionFailedError } from "@vercel/blob";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -47,14 +47,25 @@ async function localLock<T>(id: string, task: () => Promise<T>): Promise<T> {
 
 export async function readWorkspace(id: string): Promise<Record> {
   if (remote()) {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      let before;
+      try {
+        before = await head(pathFor(id));
+      } catch (error) {
+        if (!(error instanceof BlobNotFoundError)) throw error;
+      }
       const result = await get(pathFor(id), {
         access: "private",
         useCache: false,
       });
       if (result?.statusCode === 200 && result.stream) {
         const data = (await new Response(result.stream).json()) as Workspace;
-        return { data, version: result.blob.etag };
+        const after = await head(pathFor(id));
+        // The delivery response can have a different ETag representation from
+        // the write API. Pair the fresh body with a stable write-API version.
+        if (before?.etag === after.etag)
+          return { data, version: after.etag };
+        continue;
       }
       const data = seedWorkspace();
       try {
@@ -68,15 +79,14 @@ export async function readWorkspace(id: string): Promise<Record> {
         return { data, version: created.etag };
       } catch (error) {
         // A concurrent first request may have already initialized this session.
-        const found = await get(pathFor(id), {
-          access: "private",
-          useCache: false,
-        });
-        if (found?.statusCode === 200 && found.stream)
-          return {
-            data: (await new Response(found.stream).json()) as Workspace,
-            version: found.blob.etag,
-          };
+        if (error instanceof BlobPreconditionFailedError) continue;
+        // Another initializer may have created the object between our reads.
+        try {
+          await head(pathFor(id));
+          continue;
+        } catch {
+          // Preserve the original write error when initialization did fail.
+        }
         throw error;
       }
     }
