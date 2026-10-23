@@ -147,6 +147,55 @@ function CategoryIcon({ category }: { category: Category }) {
     </span>
   );
 }
+function PhotoField({
+  target,
+  photo,
+  ready,
+  uploading,
+  onRemove,
+  onUpload,
+}: {
+  target: "report" | "completion";
+  photo: string | null;
+  ready: boolean;
+  uploading: boolean;
+  onRemove: () => void;
+  onUpload: (file: File | undefined) => void;
+}) {
+  return (
+    <div className="photo-field">
+      {photo ? (
+        <div className="photo-preview">
+          <img
+            src={photo.replace("/upload/", "/upload/f_auto,q_auto,w_800/")}
+            alt={target === "report" ? "Issue photo" : "Repair completion photo"}
+          />
+          <button type="button" className="small-button" onClick={onRemove}>
+            Remove photo
+          </button>
+        </div>
+      ) : (
+        <label className={"upload-zone " + (!ready ? "unavailable" : "")}>
+          <Camera size={24} />
+          <strong>{uploading ? "Uploading photo…" : "Add a photo"}</strong>
+          <span>
+            {ready
+              ? "Take a photo or choose an image · up to 10 MB"
+              : "Cloudinary setup pending · photos are optional"}
+          </span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            capture="environment"
+            disabled={!ready || uploading}
+            onChange={(e) => onUpload(e.target.files?.[0])}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
 export default function CampusApp() {
   const [data, setData] = useState<Data | null>(null),
     [loading, setLoading] = useState(true),
@@ -382,55 +431,6 @@ export default function CampusApp() {
   const label =
     nav.find((n) => n.id === view)?.label ??
     (view === "settings" ? "App & integrations" : "All issues");
-  function PhotoField({ target }: { target: "report" | "completion" }) {
-    const photo = target === "report" ? reportPhoto : completionPhoto;
-    return (
-      <div className="photo-field">
-        {photo ? (
-          <div className="photo-preview">
-            <img
-              src={photo.replace("/upload/", "/upload/f_auto,q_auto,w_800/")}
-              alt={
-                target === "report" ? "Issue photo" : "Repair completion photo"
-              }
-            />
-            <button
-              type="button"
-              className="small-button"
-              onClick={() =>
-                target === "report"
-                  ? setReportPhoto(null)
-                  : setCompletionPhoto(null)
-              }
-            >
-              Remove photo
-            </button>
-          </div>
-        ) : (
-          <label
-            className={
-              "upload-zone " + (!data?.cloudinaryReady ? "unavailable" : "")
-            }
-          >
-            <Camera size={24} />
-            <strong>{uploading ? "Uploading photo…" : "Add a photo"}</strong>
-            <span>
-              {data?.cloudinaryReady
-                ? "Take a photo or choose an image · up to 10 MB"
-                : "Cloudinary setup pending · photos are optional"}
-            </span>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-              capture="environment"
-              disabled={!data?.cloudinaryReady || uploading}
-              onChange={(e) => void upload(e.target.files?.[0], target)}
-            />
-          </label>
-        )}
-      </div>
-    );
-  }
   function IssueTable({ rows }: { rows: Issue[] }) {
     return rows.length ? (
       <div className="table-wrap">
@@ -1693,7 +1693,14 @@ export default function CampusApp() {
                 <option>High</option>
               </select>
             </label>
-            <PhotoField target="report" />
+            <PhotoField
+              target="report"
+              photo={reportPhoto}
+              ready={!!data?.cloudinaryReady}
+              uploading={uploading}
+              onRemove={() => setReportPhoto(null)}
+              onUpload={(file) => void upload(file, "report")}
+            />
             <div className="modal-actions">
               <button
                 className="secondary"
@@ -1926,7 +1933,14 @@ export default function CampusApp() {
                     placeholder="Describe the repair and what you checked."
                   />
                 </label>
-                <PhotoField target="completion" />
+                <PhotoField
+                  target="completion"
+                  photo={completionPhoto}
+                  ready={!!data?.cloudinaryReady}
+                  uploading={uploading}
+                  onRemove={() => setCompletionPhoto(null)}
+                  onUpload={(file) => void upload(file, "completion")}
+                />
                 <button
                   className="primary"
                   disabled={busy || uploading || offline}
