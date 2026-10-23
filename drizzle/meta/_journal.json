@@ -8,6 +8,13 @@
       "when": 1792748229531,
       "tag": "0000_tiny_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792755806210,
+      "tag": "0001_lucky_william_stryker",
+      "breakpoints": true
     }
   ]
 }
