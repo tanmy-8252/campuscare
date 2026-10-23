@@ -1,64 +1,74 @@
 # CampusCare
 
-A private hackathon prototype for campus maintenance reporting. Built for Hacktober HackDays 2026.
+A campus maintenance reporting prototype built for Hacktober HackDays 2026. Students and employees report problems, administrators assign specialists, and workers record repairs.
 
-## What is working
+## Features
 
-- Responsive administrator, student/employee, and worker workspaces.
-- Create reports with category, campus zone, exact location, description, and priority.
-- Suggest related open reports and add support to an existing report.
-- Assign a worker with the right specialty; track work through Reported → Assigned → In progress → Resolved → Confirmed.
-- Completion notes, optional photo evidence, and reporter confirmation/reopening.
-- Daily counts, month selection, category breakdowns, zone map, and monthly CSV export.
-- Persistent Cloudflare D1 workspace per signed-in account, with conflict protection.
-- Installable web-app manifest, home-screen icons, and an honest offline fallback.
-- Cloudinary signed upload endpoint and optimized image delivery. Real uploads require runtime configuration.
+- Phone-friendly student/employee and worker workspaces; an administrator dashboard on desktop and phone.
+- Categories, campus zones, exact locations, priorities, related report suggestions, and support for existing reports.
+- Reported → Assigned → In progress → Resolved → Confirmed, with completion notes and reopening.
+- Daily/monthly charts, category summaries, CSV export, worker management, and an illustrative campus map.
+- PWA manifest, home-screen icons, phone navigation, and an offline information screen.
+- Signed Cloudinary report/completion photo uploads, once account credentials are configured.
 
-## Scope of this version
+## Stack and deployment
 
-The site is owner-private. The role selector previews the three roles inside a single signed-in account. It is not a production authorization system or a shared campus tenant. All workers, locations, and initial reports are sample content. A separate account gets a separate demonstration workspace.
+The Vercel version uses Next.js 16.4.2, React 19, TypeScript, and private Vercel Blob storage. Report collections are stored as private JSON objects with conditional ETag writes to protect concurrent updates. Reads bypass the CDN cache.
 
-Real campus membership, worker invitations, server-enforced role permissions, a common campus database, push notifications, real campus coordinates, and standalone Android/iOS packages are next-stage work. There is no automatic Notion synchronization.
+The original Cloudflare/Vinext scaffolding and D1 migration remain in the repository for history/reference. The default commands now target standard Next.js; the current runtime does not require Cloudflare D1 or ChatGPT sign-in.
 
-## Stack
+## Demo identity and privacy
 
-React 19, TypeScript, Vinext/Vite, Cloudflare Workers, D1 SQLite, Drizzle, and Cloudinary. The UI uses Lucide icons. Sites provides private deployment and sign-in.
+This is a prototype with a role preview switcher, sample workers, and sample reports. It does not yet implement campus membership or independent staff permissions.
+
+Each browser gets an unguessable, HttpOnly, SameSite demo-session cookie. A derived identifier scopes its private server-side data. Refreshing or changing roles preserves that browser's workspace. A different browser or device has a separate demo workspace. Clearing the cookie loses access to that workspace; there is no account recovery in this prototype. Never use it for sensitive real-world campus records.
 
 ## Run locally
 
-Node 22.13 or newer is required.
+Use Node.js 22.13 or newer.
 
-1. Run `npm run install:ci`.
-2. Run `npm run build` to generate the local Worker configuration.
-3. Apply the migration:
-   `node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_tiny_wendigo.sql`
-4. Run `npm run dev` and visit the printed loopback address.
-5. Local development simulates sign-in; follow the sign-in redirect to open the workspace.
+1. Run `npm ci --no-audit --no-fund`.
+2. Run `npm run dev`.
+3. Open the printed localhost address. A demo session is created automatically.
 
-Production database migrations are applied through Sites publication. Keep the existing project ID in `.openai/hosting.json` when updating this private site.
+Without Blob credentials, local development saves records under ignored `.campuscare-data/`. Deployed Vercel functions require private Blob storage and never fall back to ephemeral local files.
 
-## Cloudinary setup
+Production checks:
 
-Configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` as hosted runtime secrets, then redeploy. For local development, put the same names in an ignored `.dev.vars` file if supported by the preview runtime. Never commit real values.
+- `npm run typecheck`
+- `npm run build`
+- `npm start`
 
-The browser requests a short-lived server-generated signature, uploads the image directly to Cloudinary, and saves the resulting secure delivery URL with the issue. Signatures constrain the destination folder and accepted formats. The browser validates image MIME type and a 10 MB limit; configure account-level restrictions and abuse controls before campus deployment. The API secret never enters the browser.
+## Deploy to Vercel
 
-Photo upload buttons explicitly show setup pending until configuration exists. Real Cloudinary upload/delivery could not be tested without an account. Reports can be submitted without photos.
+1. Import `tanmy-8252/campuscare` from GitHub as a Next.js project.
+2. Connect the private `campuscare-reports` Blob store to the CampusCare project for Production and Preview.
+3. Vercel injects the storage connection environment values. The SDK supports a read-write token, or a connected store ID with Vercel's rotating OIDC identity.
+4. Deploy the production branch. `vercel.json` declares the framework, build command, and Mumbai function region.
+5. Verify creation, assignment, completion, confirmation, and persistence on the deployed URL.
 
-## Verification
+Keep storage credentials out of GitHub and browser bundles. Development and deployed demo records are separate.
 
-- TypeScript check and production build.
-- Local API lifecycle: create, assign, start, resolve, confirm, reopen.
-- Wrong-specialty worker, wrong-worker transition, invalid state transitions, duplicate support, malformed fields, missing report, cross-origin request, and unauthenticated API checks.
-- Browser exercise of reporting, assignment, worker progress, and completion.
-- Responsive phone preview at 390 px.
+## Cloudinary
 
-The development API checks are under ignored `work/` and use only the isolated local demonstration account. Hosted and local databases are separate.
+Configure these as Vercel runtime environment variables and redeploy:
 
-## Data model
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
 
-For the prototype, one workspace row stores a JSON report collection and worker collection under the authenticated account ID. A version check prevents concurrent writes from silently overwriting one another. Before scaling to a campus tenant, normalize issues, events, assignments, members, workers, and support records into separate indexed tables.
+The API secret stays server-side. The browser requests a signature and uploads directly to Cloudinary, then saves the secure delivery URL. Photo controls show setup pending until all three values exist. Reports can be submitted without photos.
 
-## Documentation
+## Notion
 
-Import `NOTION-JOURNAL.md` into your team's Notion workspace and add your daily evidence and decisions. The journal is a draft handoff, not proof that Notion has been updated.
+Import `NOTION-JOURNAL.md` into the team's Notion workspace and update it daily. This file is a draft journal, not automatic Notion synchronization.
+
+## Before a campus launch
+
+Add actual campus membership, server-enforced roles, a shared campus data model, worker invitations, notifications, real map coordinates, and physical-device installation testing. Normalize issues/events/assignments into a database when moving beyond this small demo workspace.
+
+## References
+
+- [Next.js on Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs)
+- [Private Vercel Blob storage](https://vercel.com/docs/vercel-blob/using-blob-sdk)
+- [Cloudinary signed uploads](https://cloudinary.com/documentation/client_side_uploading)

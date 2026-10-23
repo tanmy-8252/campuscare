@@ -46,3 +46,7 @@ yarn-error.log*
 
 # Safe configuration template
 !.env.example
+
+# Vercel local state and development records
+/.vercel/
+/.campuscare-data/

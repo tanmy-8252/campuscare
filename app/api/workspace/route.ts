@@ -1,11 +1,9 @@
-import { and, eq } from "drizzle-orm";
-import { env } from "cloudflare:workers";
 import { z } from "zod";
-import { getDb } from "@/db";
-import { workspaces } from "@/db/schema";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getDemoUser } from "@/app/demo-session";
+import { readWorkspace, saveWorkspace } from "@/lib/workspace-store";
 import { categories, zones, seedWorkspace, type Workspace } from "@/app/domain";
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 const json = (v: unknown, status = 200) =>
   Response.json(v, { status, headers: { "Cache-Control": "no-store" } });
 const text = z.string().trim().min(1).max(2000);
@@ -45,20 +43,9 @@ const actionSchema = z.discriminatedUnion("action", [
     phone: z.string().trim().max(30),
   }),
 ]);
-async function getRecord(ownerId: string) {
-  const db = getDb();
-  await db
-    .insert(workspaces)
-    .values({ ownerId, data: JSON.stringify(seedWorkspace()), version: 0 })
-    .onConflictDoNothing();
-  return (
-    await db.select().from(workspaces).where(eq(workspaces.ownerId, ownerId))
-  )[0];
-}
 function validPhoto(value: string | null | undefined) {
   if (!value) return true;
-  const cloud = (env as unknown as Record<string, string>)
-    .CLOUDINARY_CLOUD_NAME;
+  const cloud = process.env.CLOUDINARY_CLOUD_NAME;
   if (!cloud) return false;
   try {
     const u = new URL(value);
@@ -72,13 +59,14 @@ function validPhoto(value: string | null | undefined) {
   }
 }
 export async function GET() {
-  const user = await getChatGPTUser();
-  if (!user) return json({ error: "Sign in to open your workspace." }, 401);
+  const user = await getDemoUser(true);
+  if (!user)
+    return json({ error: "Open the app to start a demo session." }, 401);
   try {
-    const r = await getRecord(user.userId);
-    const e = env as unknown as Record<string, string>;
+    const r = await readWorkspace(user.userId);
+    const e = process.env;
     return json({
-      ...JSON.parse(r.data),
+      ...r.data,
       cloudinaryReady: !!(
         e.CLOUDINARY_CLOUD_NAME &&
         e.CLOUDINARY_API_KEY &&
@@ -93,8 +81,9 @@ export async function GET() {
   }
 }
 export async function POST(req: Request) {
-  const user = await getChatGPTUser();
-  if (!user) return json({ error: "Sign in to make changes." }, 401);
+  const user = await getDemoUser();
+  if (!user)
+    return json({ error: "Open the app to start a demo session." }, 401);
   if (
     req.headers.get("origin") &&
     req.headers.get("origin") !== new URL(req.url).origin
@@ -113,8 +102,8 @@ export async function POST(req: Request) {
     );
   try {
     for (let attempt = 0; attempt < 4; attempt++) {
-      const record = await getRecord(user.userId);
-      const data: Workspace = JSON.parse(record.data);
+      const record = await readWorkspace(user.userId);
+      const data: Workspace = record.data;
       const at = new Date().toISOString();
       if (a.action === "create") {
         const next =
@@ -227,17 +216,8 @@ export async function POST(req: Request) {
         issue.updatedAt = at;
         issue.history.push({ text: message, at });
       }
-      const result = await getDb()
-        .update(workspaces)
-        .set({ data: JSON.stringify(data), version: record.version + 1 })
-        .where(
-          and(
-            eq(workspaces.ownerId, user.userId),
-            eq(workspaces.version, record.version),
-          ),
-        )
-        .returning({ version: workspaces.version });
-      if (result.length) return json({ ok: true });
+      if (await saveWorkspace(user.userId, data, record.version))
+        return json({ ok: true });
     }
     return json({ error: "The workspace changed. Please retry." }, 409);
   } catch {

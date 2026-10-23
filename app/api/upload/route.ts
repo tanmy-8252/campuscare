@@ -1,9 +1,11 @@
-import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getDemoUser } from "@/app/demo-session";
 export async function POST(req: Request) {
-  const user = await getChatGPTUser();
+  const user = await getDemoUser();
   if (!user)
-    return Response.json({ error: "Sign in to upload." }, { status: 401 });
+    return Response.json(
+      { error: "Open the app to start a demo session." },
+      { status: 401 },
+    );
   if (
     req.headers.get("origin") &&
     req.headers.get("origin") !== new URL(req.url).origin
@@ -12,7 +14,7 @@ export async function POST(req: Request) {
       { error: "Request origin rejected." },
       { status: 403 },
     );
-  const e = env as unknown as Record<string, string>;
+  const e = process.env;
   if (
     !e.CLOUDINARY_CLOUD_NAME ||
     !e.CLOUDINARY_API_KEY ||

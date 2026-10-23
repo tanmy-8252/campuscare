@@ -1515,8 +1515,9 @@ export default function CampusApp() {
                       <h2>About this prototype</h2>
                       <p>
                         This is your private demo workspace with sample reports.
-                        All three roles are previews inside your account. Data
-                        is saved online and follows your sign-in.
+                        All three roles are previews inside this browser’s demo
+                        session. Data is saved online for this browser’s private
+                        demo session.
                       </p>
                       <div className="setup-note">
                         Before a campus launch: add campus membership, protected
@@ -2179,7 +2180,7 @@ export default function CampusApp() {
           </ol>
           <p className="setup-note">
             An internet connection is needed to load and save reports. This
-            private prototype also requires your sign-in.
+            browser has its own private demo workspace.
           </p>
         </Modal>
       )}
@@ -2233,9 +2234,9 @@ export default function CampusApp() {
           </div>
           <div className="setup-note">
             Sample reports are labelled as demo content. Your changes are saved
-            to a private online workspace for your signed-in account. Campus
-            membership and separate staff permissions are planned for the next
-            stage.
+            to a private online workspace for this browser’s demo session.
+            Campus membership and separate staff permissions are planned for the
+            next stage.
           </div>
         </Modal>
       )}

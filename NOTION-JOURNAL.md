@@ -32,7 +32,7 @@ An installable web app with three role-based experiences and a visible reporting
 
 ## Technology decision
 
-Start with a responsive PWA using React and TypeScript, backed by Cloudflare Workers and D1. Use Cloudinary for signed image upload and optimized delivery. The same API design can support dedicated native mobile apps later.
+Start with a responsive PWA using React and TypeScript. The first prototype used Cloudflare Workers and D1; the Vercel deployment uses standard Next.js and private Vercel Blob workspace records. Use Cloudinary for signed image upload and optimized delivery. The same API design can support dedicated native mobile apps later.
 
 The current role switcher is a demo tool. Production role permissions and common campus membership are not implemented yet.
 
@@ -107,3 +107,13 @@ Pending: add the team's Cloudinary cloud name, API key, and API secret to hosted
 - PWA manifest: https://web.dev/learn/pwa/web-app-manifest
 - Cloudinary signed browser uploads: https://cloudinary.com/documentation/client_side_uploading
 - Cloudinary Upload API: https://cloudinary.com/documentation/image_upload_api_reference
+
+## 23 October 2026 — Vercel migration
+
+**Requested:** Deploy the GitHub application to Vercel.
+
+**Changed:** Replaced platform-specific sign-in with a private browser demo session, added private Vercel Blob persistence with ETag conflict checks, and moved the default build to Next.js 16.4.2. Cloudflare scaffolding remains for reference. Each browser has its own isolated demonstration workspace; real campus accounts and cross-device membership are still pending.
+
+**Storage:** Private campuscare-reports store in Mumbai (BOM1). Connect it to the CampusCare project and verify the deployed lifecycle.
+
+**Evidence:** Add the verified production URL and live workflow screenshots after deployment.
