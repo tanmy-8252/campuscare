@@ -1332,6 +1332,9 @@ td > small {
   font-size: 11px;
 }
 .modal {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   border: 1px solid #e2e9de;
   border-radius: 15px;
   padding: 27px;
