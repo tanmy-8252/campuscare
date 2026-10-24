@@ -6,7 +6,7 @@ The Supabase version replaces browser demo sessions with verified accounts and o
 
 The login page offers Admin, Student / Staff, and Worker. Signing in checks the chosen role and organisation against database membership; choosing a different role cannot grant access. Admin signup creates a new organisation. An existing organisation's admin cannot be selected through public signup.
 
-Students and staff join an existing organisation with its join code and receive access immediately. Workers use the code, choose a specialty, and wait for that organisation's admin to approve or reject their request. Admins find the join code and pending worker requests under Maintenance team. Only approved worker accounts enter the assignment roster.
+Students and employees select an existing organisation and receive access immediately, without an organisation code or admin approval. Any verified account without an existing membership can join as a student/employee this way. Workers use the organisation's code, choose a specialty, and wait for that organisation's admin to approve or reject their request. Admins find the join code and pending worker requests under Maintenance team. Only approved worker accounts enter the assignment roster.
 
 Organisations start with an empty issue list and no sample workers. Earlier browser demo records stay in the original private Blob store; they are not silently imported into a real organisation.
 
@@ -20,7 +20,7 @@ Admins assign specialists from their own approved worker roster. Workers read an
 
 ## Setup
 
-Apply `supabase/migrations/202610230001_campuscare_organisations.sql` to the intended project. Configure the public URL and publishable key locally and in Vercel. The app uses cookie sessions through `@supabase/ssr`; the server verifies users, and `proxy.ts` refreshes sessions. Account cookies are HttpOnly because authentication is handled through server routes.
+Apply the SQL files in `supabase/migrations/` once in filename order. Configure the public URL and publishable key locally and in Vercel. The app uses cookie sessions through `@supabase/ssr`; the server verifies users, and `proxy.ts` refreshes sessions. Account cookies are HttpOnly because authentication is handled through server routes.
 
 Keep email confirmation enabled. Configure a real SMTP sender before opening registration. For the chosen Gmail sender, use `smtp.gmail.com`, port `587`, sender name `CampusCare`, and the same Gmail address as Sender email and Username. The owner must generate a Google App Password and paste it directly into Supabase. Do not use or store the main Gmail password. Google sending limits and Supabase's authentication email rate limits both apply; Supabase also warns that a personal mail provider can affect transactional email delivery.
 

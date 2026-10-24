@@ -1469,8 +1469,8 @@ export default function CampusApp({ account }: { account: Account }) {
                         Reports are shared within your organisation. Workers see their assigned jobs.
                       </p>
                       <div className="setup-note">
-                        Students and staff join with the organisation’s code.
-                        Worker accounts need approval from this organisation’s admin.
+                        Students and employees join by selecting their organisation, without a code.
+                        Worker accounts need the organisation’s code and approval from its admin.
                       </div>
                     </section>
                   </div>

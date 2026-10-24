@@ -15,8 +15,8 @@ export async function GET() {
 
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("create"), name: z.string().trim().min(2).max(120), kind: z.enum(["College", "Workplace"]), location: z.string().trim().min(2).max(160) }),
-  z.object({ action: z.literal("join"), organisationId: z.string().uuid(), code: z.string().trim().min(1).max(64), role: z.enum(["resident", "worker"]), specialty: z.enum(["Electrical", "Plumbing", "Sanitation", "Infrastructure", "Other"]).optional() }),
-]);
+  z.object({ action: z.literal("join"), organisationId: z.string().uuid(), code: z.string().trim().min(1).max(64).optional(), role: z.enum(["resident", "worker"]), specialty: z.enum(["Electrical", "Plumbing", "Sanitation", "Infrastructure", "Other"]).optional() }),
+]).refine(value => value.action !== "join" || value.role !== "worker" || !!value.code, { path: ["code"], message: "Enter the organisation code for worker access." });
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return json({ error: "Request origin rejected." }, 403);
   try {
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const a = parsed.data;
     const { data, error } = a.action === "create"
       ? await client.rpc("cc_create_organisation", { p_name: a.name, p_kind: a.kind, p_location: a.location })
-      : await client.rpc("cc_join_organisation", { p_organisation: a.organisationId, p_code: a.code, p_role: a.role, p_specialty: a.specialty ?? null });
+      : await client.rpc("cc_join_organisation", { p_organisation: a.organisationId, p_code: a.code ?? null, p_role: a.role, p_specialty: a.specialty ?? null });
     if (error) return databaseError(error);
     return json({ next: data.status === "active" ? "/" : "/pending" });
   } catch { return json({ error: "Organisation setup could not be completed. Please retry." }, 503); }

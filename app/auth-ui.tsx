@@ -96,7 +96,7 @@ export default function AuthForm({ mode, configured, initialRole = "resident", i
       }
       const payload = role === "admin"
         ? { action: "create", name: form.get("organisationName"), kind: form.get("kind"), location: form.get("location") }
-        : { action: "join", organisationId, code: form.get("code"), role, specialty: role === "worker" ? form.get("specialty") : undefined };
+        : { action: "join", organisationId, code: role === "worker" ? form.get("code") : undefined, role, specialty: role === "worker" ? form.get("specialty") : undefined };
       const body = await post("/api/account", payload); router.replace(body.next || "/"); router.refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "Please retry."); }
     finally { setBusy(false); }
@@ -139,11 +139,11 @@ export default function AuthForm({ mode, configured, initialRole = "resident", i
         <label className="field">Organisation name<input name="organisationName" required minLength={2} maxLength={120} placeholder="College or workplace name" /></label>
         <label className="field">Organisation type<select name="kind"><option>College</option><option>Workplace</option></select></label>
         <label className="field">City / campus location<input name="location" required minLength={2} maxLength={160} placeholder="For example, Noida" /></label>
-        <p className="account-hint">You will manage this organisation. Share its join code with your students, staff, and maintenance team.</p>
+        <p className="account-hint">You will manage this organisation. Students and employees can select it to join. Share its join code with your maintenance team.</p>
       </div>}
-      {joining && !verified && role !== "admin" && <><label className="field">Organisation code<input name="code" required maxLength={64} autoComplete="off" placeholder="Code shared by your administrator" /></label>
+      {joining && !verified && role !== "admin" && <>{role === "worker" && <label className="field">Organisation code<input name="code" required maxLength={64} autoComplete="off" placeholder="Code shared by your administrator" /></label>}
         {role === "worker" && <label className="field">Your specialty<select name="specialty">{categories.map(c => <option key={c}>{c}</option>)}</select></label>}
-        <p className="account-hint">{role === "worker" ? "Your organisation’s admin must approve your worker account before you can access jobs." : "Use your organisation’s code to join. Students and staff do not need admin approval."}</p>
+        <p className="account-hint">{role === "worker" ? "Your organisation’s admin must approve your worker account before you can access jobs." : "Select your organisation to join. Students and employees do not need a code or admin approval."}</p>
       </>}
       {error && <p className="account-alert" role="alert">{error}</p>}
       {message && <p className="account-success" role="status">{message}</p>}

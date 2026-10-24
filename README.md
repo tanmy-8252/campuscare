@@ -6,7 +6,7 @@ Campus maintenance reporting for Hacktober HackDays 2026. Students and staff rep
 
 - Phone-friendly student/staff and worker workspaces; an administrator dashboard on desktop and phone.
 - Verified email accounts and Google sign-in with Admin, Student / Staff, and Worker login choices. The selected role and organisation must match the account's actual membership.
-- Admin organisation registration and private join codes. Students/staff join immediately; workers require approval from their organisation's admin.
+- Admin organisation registration. Students and employees select their organisation and join without a code; workers need its private code and approval from their organisation's admin.
 - Server and database permission checks for organisation separation, worker assignments, and reporter confirmation.
 - Categories, campus zones, exact locations, priorities, related report suggestions, and support for existing reports.
 - Reported → Assigned → In progress → Resolved → Confirmed, with completion notes and reopening.
@@ -27,10 +27,10 @@ The previous private Vercel Blob demo records remain preserved in their original
 Use Node.js 22.13 or newer.
 
 1. Run `npm ci --no-audit --no-fund`.
-2. Apply `supabase/migrations/202610230001_campuscare_organisations.sql` to the intended Supabase project once.
+2. Apply the SQL files in `supabase/migrations/` to the intended Supabase project once, in filename order.
 3. Copy `.env.example` to ignored `.env.local` and configure the public Supabase URL and publishable key. Never use a secret or service-role key in a `NEXT_PUBLIC_` variable.
 4. Keep email confirmation enabled and configure SMTP. Set the Supabase Site URL and allow the exact verification/recovery callback URLs described in the authentication guide.
-5. Run `npm run dev`. Register an admin, verify the email, and finish organisation setup. Share its join code with members; approve workers under Maintenance team.
+5. Run `npm run dev`. Register an admin, verify the email, and finish organisation setup. Students and employees select the organisation to join without a code. Share its join code with workers and approve them under Maintenance team.
 
 If using the prepared local callback allowlist, start with `npm run dev -- --hostname 127.0.0.1 --port 3011`. Verification links should be opened in the browser that requested them. Missing Supabase configuration shows a setup message; it does not open a demo session.
 

@@ -33,7 +33,7 @@ export default function MembershipPanel({ onUpdated }: { onUpdated: () => void }
     finally { setBusy(""); }
   }
   const pending = data?.members.filter(m => m.status === "pending" && m.role === "worker") ?? [];
-  return <section className="panel membership-panel"><div className="panel-heading"><div><h2><ShieldCheck size={19} /> Organisation access</h2><p>Share your code with members and review worker requests.</p></div></div>
+  return <section className="panel membership-panel"><div className="panel-heading"><div><h2><ShieldCheck size={19} /> Organisation access</h2><p>Students and employees join without a code. Share your code with workers and review their requests.</p></div></div>
     {error && <p role="alert" className="account-alert">{error}</p>}
     {data && <><label className="field">Organisation join code<div className="membership-code"><input aria-label="Organisation join code" readOnly value={data.joinCode} /><button type="button" className="secondary" onClick={async () => { try { await navigator.clipboard.writeText(data.joinCode); setCopied(true); } catch { setError("Select and copy the code from the field."); } }}><Copy size={16} />{copied ? "Copied" : "Copy"}</button></div></label>
       <h3>Worker requests <span>{pending.length}</span></h3>
