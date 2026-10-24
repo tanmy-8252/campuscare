@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./account.css";
 export const metadata: Metadata = {
   title: "CampusCare — A better campus, together",
   description:

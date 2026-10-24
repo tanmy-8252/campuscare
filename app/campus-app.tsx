@@ -54,9 +54,12 @@ import {
   closed,
   type Category,
   type Issue,
-  type Role,
   type Workspace,
 } from "./domain";
+import type { Account } from "./account-types";
+import { roleLabels } from "./account-types";
+import { SignOutButton } from "./auth-ui";
+import MembershipPanel from "./membership-panel";
 type Data = Workspace & { cloudinaryReady: boolean };
 type InstallEvent = Event & {
   prompt: () => Promise<void>;
@@ -196,13 +199,13 @@ function PhotoField({
   );
 }
 
-export default function CampusApp() {
+export default function CampusApp({ account }: { account: Account }) {
   const [data, setData] = useState<Data | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
-  const [role, setRole] = useState<Role>("admin"),
-    [view, setView] = useState("overview"),
-    [workerId, setWorkerId] = useState("w1");
+  const role = account.role;
+  const workerId = account.userId;
+  const [view, setView] = useState("overview");
   const [query, setQuery] = useState(""),
     [status, setStatus] = useState("All statuses"),
     [category, setCategory] = useState("All categories"),
@@ -379,7 +382,7 @@ export default function CampusApp() {
   const monthly = issues.filter((i) =>
     todayKey(new Date(i.createdAt)).startsWith(month),
   );
-  const myIssues = issues.filter((i) => i.reporter === "You"),
+  const myIssues = issues.filter((i) => i.reporterId === account.userId),
     jobs = issues.filter((i) => i.workerId === workerId);
   let base =
     role === "worker"
@@ -642,8 +645,8 @@ export default function CampusApp() {
             <Leaf size={20} />
           </div>
           <div>
-            <strong>Greenfield Campus</strong>
-            <small>Sample campus · Demo workspace</small>
+            <strong>{account.organisation.name}</strong>
+            <small>{account.organisation.kind} · {account.organisation.location}</small>
           </div>
           <ShieldCheck size={15} />
         </div>
@@ -683,9 +686,9 @@ export default function CampusApp() {
               <br />A bigger difference.
             </strong>
             <p>A cleaner, safer campus starts with all of us.</p>
-            <button onClick={newReport}>
+            {role !== "worker" && <button onClick={newReport}>
               Report an issue <ArrowUpRight size={15} />
-            </button>
+            </button>}
           </div>
           <button
             className={"nav-item " + (view === "settings" ? "active" : "")}
@@ -700,9 +703,9 @@ export default function CampusApp() {
             <ArrowDownToLine size={15} />
           </button>
           <div className="sidebar-footer">
-            <span className="avatar">TP</span>
+            <span className="avatar">{initials(account.name)}</span>
             <div>
-              <strong>Your demo workspace</strong>
+              <strong>{account.name}</strong>
               <small>
                 {role === "admin"
                   ? "Campus administrator"
@@ -752,36 +755,16 @@ export default function CampusApp() {
               <i />
             </button>
             <div className="header-divider" />
-            <label className="role-picker">
-              <span className="avatar small">
-                {role === "admin" ? "AD" : role === "worker" ? "WK" : "ST"}
-              </span>
-              <span>
-                <small>PREVIEW AS</small>
-                <select
-                  aria-label="Preview role"
-                  value={role}
-                  onChange={(e) => {
-                    setRole(e.target.value as Role);
-                    navigate("overview");
-                    setSelectedId(null);
-                  }}
-                >
-                  <option value="admin">Administrator</option>
-                  <option value="resident">Student / employee</option>
-                  <option value="worker">Worker</option>
-                </select>
-              </span>
-            </label>
+            <div className="account-badge"><span className="avatar small">{initials(account.name)}</span><span><small>YOUR ROLE</small><strong>{roleLabels[role]}</strong></span><SignOutButton /></div>
           </div>
         </header>
         <main className="main-content">
           <div className="prototype-strip">
             <span>
               <Sparkles size={13} />
-              Hackathon prototype
+              Organisation workspace
             </span>
-            <p>Sample data · switch roles to try the full reporting journey.</p>
+            <p>Your organisation’s reports, people, and progress.</p>
             <button onClick={() => setModal("about")}>
               How it works <ArrowRight size={13} />
             </button>
@@ -837,10 +820,10 @@ export default function CampusApp() {
                             : "Make CampusCare work for your team."}
               </p>
             </div>
-            <button className="primary report-button" onClick={newReport}>
+            {role !== "worker" && <button className="primary report-button" onClick={newReport}>
               <Plus size={18} />
               Report an issue
-            </button>
+            </button>}
           </section>
           {loading && !data ? (
             <div className="loading">
@@ -850,25 +833,7 @@ export default function CampusApp() {
           ) : (
             data && (
               <>
-                {role === "worker" && (
-                  <div className="worker-picker">
-                    <HardHat size={18} />
-                    <label>
-                      Preview worker{" "}
-                      <select
-                        aria-label="Preview worker"
-                        value={workerId}
-                        onChange={(e) => setWorkerId(e.target.value)}
-                      >
-                        {workers.map((w) => (
-                          <option key={w.id} value={w.id}>
-                            {w.name} · {w.specialty}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-                )}
+                {role === "worker" && <div className="worker-picker"><HardHat size={18} /><span>{account.name} · Your assigned jobs</span></div>}
                 {(view === "overview" || view === "analytics") && (
                   <>
                     {role === "admin" && view === "overview" && (
@@ -1366,19 +1331,14 @@ export default function CampusApp() {
                 )}
                 {view === "team" && (
                   <>
+                    <MembershipPanel onUpdated={() => void load(true)} />
                     <div className="section-toolbar">
                       <span>
                         {workers.length} team members ·{" "}
                         {active.filter((i) => i.workerId).length} active
                         assignments
                       </span>
-                      <button
-                        className="secondary"
-                        onClick={() => setModal("worker")}
-                      >
-                        <Plus size={16} />
-                        Add team member
-                      </button>
+
                     </div>
                     <div className="team-grid">
                       {workers.map((w) => {
@@ -1422,16 +1382,7 @@ export default function CampusApp() {
                                 <span>Completed</span>
                               </div>
                             </div>
-                            <button
-                              className="secondary"
-                              onClick={() => {
-                                setRole("worker");
-                                setWorkerId(w.id);
-                                navigate("issues");
-                              }}
-                            >
-                              Preview assigned jobs <ArrowRight size={15} />
-                            </button>
+
                           </section>
                         );
                       })}
@@ -1512,18 +1463,14 @@ export default function CampusApp() {
                       <div className="integration-logo">
                         <ShieldCheck size={26} />
                       </div>
-                      <h2>About this prototype</h2>
+                      <h2>Your organisation workspace</h2>
                       <p>
-                        This is your private demo workspace with sample reports.
-                        All three roles are previews inside this browser’s demo
-                        session. Data is saved online for this browser’s private
-                        demo session.
+                        You are signed in to {account.organisation.name} as {roleLabels[role]}.
+                        Reports are shared within your organisation. Workers see their assigned jobs.
                       </p>
                       <div className="setup-note">
-                        Before a campus launch: add campus membership, protected
-                        admin and worker roles, worker invitations, and
-                        notification delivery. The role preview is for testing
-                        the workflow.
+                        Students and staff join with the organisation’s code.
+                        Worker accounts need approval from this organisation’s admin.
                       </div>
                     </section>
                   </div>
@@ -1558,13 +1505,13 @@ export default function CampusApp() {
               </span>
             </button>
           ))}
-          <button onClick={newReport}>
+          {role !== "worker" && <button onClick={newReport}>
             <Plus size={22} />
             <span>Report</span>
-          </button>
+          </button>}
         </nav>
       </div>
-      {modal === "report" && (
+      {modal === "report" && role !== "worker" && (
         <Modal
           title="A small report. A real difference."
           onClose={() => setModal(null)}
@@ -1951,7 +1898,7 @@ export default function CampusApp() {
               </form>
             )}
           {role === "resident" &&
-            selected.reporter !== "You" &&
+            selected.reporterId !== account.userId &&
             !closed(selected) && (
               <button
                 className="secondary full-width"
@@ -1967,8 +1914,8 @@ export default function CampusApp() {
                 I’m affected by this too
               </button>
             )}
-          {role === "resident" &&
-            selected.reporter === "You" &&
+          {role !== "worker" &&
+            selected.reporterId === account.userId &&
             selected.status === "Resolved" && (
               <button
                 className="primary full-width"
@@ -1984,8 +1931,8 @@ export default function CampusApp() {
                 Confirm the problem is fixed
               </button>
             )}
-          {role === "resident" &&
-            selected.reporter === "You" &&
+          {role !== "worker" &&
+            selected.reporterId === account.userId &&
             closed(selected) && (
               <form
                 className="reopen-form"
@@ -2013,66 +1960,8 @@ export default function CampusApp() {
               </form>
             )}
           <p className="detail-footnote">
-            Role preview · these actions are for testing your private demo
-            workspace.
+            Actions are available according to your organisation role.
           </p>
-        </Modal>
-      )}
-      {modal === "worker" && (
-        <Modal title="Add a team member" onClose={() => setModal(null)}>
-          <p className="modal-intro">
-            Add a specialist to your demo maintenance team.
-          </p>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              const ok = await run(
-                {
-                  action: "addWorker",
-                  name: f.get("name"),
-                  specialty: f.get("specialty"),
-                  phone: f.get("phone"),
-                },
-                "Team member added.",
-              );
-              if (ok) setModal(null);
-            }}
-          >
-            <label className="field">
-              Full name
-              <input
-                name="name"
-                maxLength={80}
-                required
-                placeholder="Team member’s name"
-              />
-            </label>
-            <label className="field">
-              Specialty
-              <select name="specialty">
-                {categories.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
-              </select>
-            </label>
-            <label className="field">
-              Phone number (optional)
-              <input name="phone" type="tel" maxLength={30} placeholder="+91" />
-            </label>
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => setModal(null)}
-              >
-                Cancel
-              </button>
-              <button className="primary" disabled={busy || offline}>
-                Add member
-              </button>
-            </div>
-          </form>
         </Modal>
       )}
       {modal === "activity" && (
@@ -2194,7 +2083,7 @@ export default function CampusApp() {
           </ol>
           <p className="setup-note">
             An internet connection is needed to load and save reports. This
-            browser has its own private demo workspace.
+            account connects you to your organisation’s workspace.
           </p>
         </Modal>
       )}
@@ -2204,15 +2093,14 @@ export default function CampusApp() {
           onClose={() => setModal(null)}
         >
           <p className="modal-intro">
-            Use the Preview as selector to test the same issue from every
-            perspective.
+            Your role connects you to the people and reports you need.
           </p>
           <div className="about-step">
             <span>01</span>
             <div>
               <h3>See it. Report it.</h3>
               <p>
-                Choose Student / employee, add a location, and submit an issue.
+                Students and staff add a location, a description, and a photo.
               </p>
             </div>
           </div>
@@ -2221,8 +2109,7 @@ export default function CampusApp() {
             <div>
               <h3>Give it a helping hand.</h3>
               <p>
-                Choose Administrator, open the report, and assign a matching
-                specialist.
+                Your organisation’s admin reviews the report and assigns an approved specialist.
               </p>
             </div>
           </div>
@@ -2231,8 +2118,7 @@ export default function CampusApp() {
             <div>
               <h3>Work on it. Share the fix.</h3>
               <p>
-                Choose Worker and select that team member. Start the job, then
-                mark it resolved.
+                The assigned worker starts the job and shares a completion note and photo.
               </p>
             </div>
           </div>
@@ -2241,16 +2127,12 @@ export default function CampusApp() {
             <div>
               <h3>Close the loop.</h3>
               <p>
-                Return to Student / employee to confirm the fix or reopen the
-                report.
+                The person who reported the issue can confirm the fix or reopen it.
               </p>
             </div>
           </div>
           <div className="setup-note">
-            Sample reports are labelled as demo content. Your changes are saved
-            to a private online workspace for this browser’s demo session.
-            Campus membership and separate staff permissions are planned for the
-            next stage.
+            Organisation membership and assigned roles control access. Ask your organisation’s admin about worker approval.
           </div>
         </Modal>
       )}

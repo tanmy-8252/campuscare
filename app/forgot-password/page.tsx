@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import AuthForm from "../auth-ui";
+import { supabaseConfigured } from "@/lib/supabase/server";
 
 export default function ForgotPasswordPage() {
-  redirect("/");
+  return <AuthForm mode="forgot" configured={supabaseConfigured()} />;
 }

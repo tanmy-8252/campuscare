@@ -40,6 +40,7 @@ export type Issue = {
   priority: "Low" | "Medium" | "High";
   status: Status;
   reporter: string;
+  reporterId?: string;
   workerId: string | null;
   photo: string | null;
   completionPhoto: string | null;

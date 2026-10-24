@@ -1,17 +1,15 @@
-import { getDemoUser } from "@/app/demo-session";
+import { accountContext, sameOrigin } from "@/lib/account";
 export async function POST(req: Request) {
-  const user = await getDemoUser();
+  if (!sameOrigin(req)) return Response.json({ error: "Request origin rejected." }, { status: 403 });
+  const { user, account } = await accountContext();
   if (!user)
     return Response.json(
-      { error: "Open the app to start a demo session." },
+      { error: "Sign in to upload a photo." },
       { status: 401 },
     );
-  if (
-    req.headers.get("origin") &&
-    req.headers.get("origin") !== new URL(req.url).origin
-  )
+  if (!account || account.status !== "active")
     return Response.json(
-      { error: "Request origin rejected." },
+      { error: "Active organisation membership is required." },
       { status: 403 },
     );
   const e = process.env;
@@ -28,7 +26,7 @@ export async function POST(req: Request) {
       { status: 503 },
     );
   const timestamp = Math.floor(Date.now() / 1000),
-    folder = "campuscare/" + user.userId.replace(/[^a-zA-Z0-9_-]/g, "_");
+    folder = "campuscare/" + account.organisation.id + "/" + account.userId;
   const params = {
     allowed_formats: "jpg,jpeg,png,webp,heic",
     folder,

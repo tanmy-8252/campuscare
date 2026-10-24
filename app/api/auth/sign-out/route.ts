@@ -1,3 +1,1 @@
-import { accountAuthUnavailable } from "@/app/auth";
-
-export const POST = accountAuthUnavailable;
+export { logout as POST } from "@/lib/auth-endpoints";

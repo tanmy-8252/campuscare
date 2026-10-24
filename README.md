@@ -1,74 +1,78 @@
 # CampusCare
 
-A campus maintenance reporting prototype built for Hacktober HackDays 2026. Students and employees report problems, administrators assign specialists, and workers record repairs.
+Campus maintenance reporting for Hacktober HackDays 2026. Students and staff report problems, administrators assign approved specialists, and workers record repairs.
 
 ## Features
 
-- Phone-friendly student/employee and worker workspaces; an administrator dashboard on desktop and phone.
+- Phone-friendly student/staff and worker workspaces; an administrator dashboard on desktop and phone.
+- Verified email accounts with Admin, Student / Staff, and Worker login choices. The selected role and organisation must match the account's actual membership.
+- Admin organisation registration and private join codes. Students/staff join immediately; workers require approval from their organisation's admin.
+- Server and database permission checks for organisation separation, worker assignments, and reporter confirmation.
 - Categories, campus zones, exact locations, priorities, related report suggestions, and support for existing reports.
 - Reported → Assigned → In progress → Resolved → Confirmed, with completion notes and reopening.
-- Daily/monthly charts, category summaries, CSV export, worker management, and an illustrative campus map.
+- Daily/monthly charts, category summaries, CSV export, approved worker management, and an illustrative campus map.
+- Signed Cloudinary report/completion photo uploads scoped to the organisation and uploading account.
 - PWA manifest, home-screen icons, phone navigation, and an offline information screen.
-- Signed Cloudinary report/completion photo uploads, once account credentials are configured.
 
-## Stack and deployment
+## Accounts and data
 
-The Vercel version uses Next.js 16.4.2, React 19, TypeScript, and private Vercel Blob storage. Report collections are stored as private JSON objects with conditional ETag writes to protect concurrent updates. Reads bypass the CDN cache.
+The app uses Next.js 16.4.2, React 19, TypeScript, and Supabase Auth/Postgres. Each account belongs to one organisation. New organisations start empty. Worker accounts cannot access jobs until approved, and can then view and update only their own assignments. Only the original reporter can confirm or reopen a repair.
 
-The original Cloudflare/Vinext scaffolding and D1 migration remain in the repository for history/reference. The default commands now target standard Next.js; the current runtime does not require Cloudflare D1 or ChatGPT sign-in.
+The three CampusCare tables deny direct public/authenticated table access. Narrow database functions derive the caller from `auth.uid()` and enforce membership and permissions independently of the app. Workspace writes lock the organisation's row to avoid lost updates. See [the authentication guide](docs/SUPABASE-AUTH.md) for the schema and security design.
 
-## Demo identity and privacy
-
-This is a prototype with a role preview switcher, sample workers, and sample reports. It does not yet implement campus membership or independent staff permissions.
-
-Each browser gets an unguessable, HttpOnly, SameSite demo-session cookie. A derived identifier scopes its private server-side data. Refreshing or changing roles preserves that browser's workspace. A different browser or device has a separate demo workspace. Clearing the cookie loses access to that workspace; there is no account recovery in this prototype. Never use it for sensitive real-world campus records.
+The previous private Vercel Blob demo records remain preserved in their original store. Real accounts use Supabase; browser demo role switching is no longer available. The older Cloudflare/D1 scaffolding and deferred-auth notes remain only as historical reference.
 
 ## Run locally
 
 Use Node.js 22.13 or newer.
 
 1. Run `npm ci --no-audit --no-fund`.
-2. Run `npm run dev`.
-3. Open the printed localhost address. A demo session is created automatically.
+2. Apply `supabase/migrations/202610230001_campuscare_organisations.sql` to the intended Supabase project once.
+3. Copy `.env.example` to ignored `.env.local` and configure the public Supabase URL and publishable key. Never use a secret or service-role key in a `NEXT_PUBLIC_` variable.
+4. Keep email confirmation enabled and configure SMTP. Set the Supabase Site URL and allow the exact verification/recovery callback URLs described in the authentication guide.
+5. Run `npm run dev`. Register an admin, verify the email, and finish organisation setup. Share its join code with members; approve workers under Maintenance team.
 
-Without Blob credentials, local development saves records under ignored `.campuscare-data/`. Deployed Vercel functions require private Blob storage and never fall back to ephemeral local files.
+If using the prepared local callback allowlist, start with `npm run dev -- --hostname 127.0.0.1 --port 3011`. Verification links should be opened in the browser that requested them. Missing Supabase configuration shows a setup message; it does not open a demo session.
 
-Production checks:
+Checks:
 
+- `npm run test:access` — real PostgreSQL permission tests in an isolated PGlite database.
 - `npm run typecheck`
 - `npm run build`
 - `npm start`
 
+The isolated permission tests do not replace real email, session, and multi-account checks. Verify signup, recovery, organisation membership, approval, wrong-role rejection, repair ownership, photos, and logout before releasing an account change.
+
 ## Deploy to Vercel
 
-1. Import `tanmy-8252/campuscare` from GitHub as a Next.js project.
-2. Connect the private `campuscare-reports` Blob store to the CampusCare project for Production and Preview.
-3. Vercel injects the storage connection environment values. The SDK supports a read-write token, or a connected store ID with Vercel's rotating OIDC identity.
-4. Deploy the production branch. `vercel.json` declares the framework, build command, and Mumbai function region.
-5. Verify creation, assignment, completion, confirmation, and persistence on the deployed URL.
+1. Import `tanmy-8252/campuscare` as a Next.js project.
+2. Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for the intended environment.
+3. Configure Supabase SMTP and the production Site URL and exact callback/recovery URLs. Do not disable email confirmation to work around delivery problems.
+4. Configure the three Cloudinary variables below and deploy the production branch. `vercel.json` declares the framework, build command, and Mumbai function region.
+5. Verify signed-out access redirects to login and test each role against the deployed application.
 
-Keep storage credentials out of GitHub and browser bundles. Development and deployed demo records are separate.
+Preview deployments need their own deliberate environment and callback configuration. Keep SMTP, Cloudinary, and other secret credentials out of GitHub and browser bundles.
 
 ## Cloudinary
 
-Configure these as Vercel runtime environment variables and redeploy:
+Set these Vercel runtime variables and redeploy:
 
 - `CLOUDINARY_CLOUD_NAME`
 - `CLOUDINARY_API_KEY`
 - `CLOUDINARY_API_SECRET`
 
-The API secret stays server-side. The browser requests a signature and uploads directly to Cloudinary, then saves the secure delivery URL. Photo controls show setup pending until all three values exist. Reports can be submitted without photos.
+The secret stays on the server. An active member requests a signature and uploads directly to an organisation/account folder. The secure delivery URL is validated again when saving a report or repair. Reports can be submitted without photos.
 
 ## Notion
 
-Import `NOTION-JOURNAL.md` into the team's Notion workspace and update it daily. This file is a draft journal, not automatic Notion synchronization.
+The building journey is maintained in the team's Notion workspace. `NOTION-JOURNAL.md` is an earlier draft and is not automatic Notion synchronization.
 
-## Before a campus launch
+## Further campus rollout work
 
-Add actual campus membership, server-enforced roles, a shared campus data model, worker invitations, notifications, real map coordinates, and physical-device installation testing. Normalize issues/events/assignments into a database when moving beyond this small demo workspace.
+Add organisation administration/revocation tools, report notifications, real map coordinates, and physical-device installation testing. Workspaces currently store issues and workers as one locked JSON record per organisation; normalize issues, events, and assignments before a larger campus rollout.
 
 ## References
 
 - [Next.js on Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs)
-- [Private Vercel Blob storage](https://vercel.com/docs/vercel-blob/using-blob-sdk)
+- [Supabase server-side authentication](https://supabase.com/docs/guides/auth/server-side/creating-a-client)
 - [Cloudinary signed uploads](https://cloudinary.com/documentation/client_side_uploading)
