@@ -26,6 +26,16 @@ Keep email confirmation enabled. Configure a real SMTP sender before opening reg
 
 Set the Supabase Site URL to the deployed app. Allow only the exact verification and recovery callback URLs needed for production and local development. The callback handler accepts only fixed internal destinations. Preview deployments need separate deliberate configuration; they do not receive production configuration automatically.
 
+## Google sign-in
+
+Email/password access and Google sign-in use the same Supabase account and organisation rules. Choose a role and organisation before signing in. New Google users finish organisation setup; creating a Google session alone grants no organisation access. Existing members must select their actual role and organisation. Pending or rejected workers return to the approval screen. Initial role choices and profile metadata never determine database permissions.
+
+In Google Auth Platform, create an External app and a Web application client. Request only `openid`, `https://www.googleapis.com/auth/userinfo.email`, and `https://www.googleapis.com/auth/userinfo.profile`. Add the deployed app origin as an authorised JavaScript origin. The Google authorised redirect URI is the Supabase project URL followed by `/auth/v1/callback`, not the app callback. Save the client ID and secret directly in Supabase's Google provider and enable it. Keep nonce checking enabled and email-less sign-in disabled. No Google client secret belongs in Vercel's public variables or source control.
+
+Supabase's redirect allowlist must also include the app's exact `/auth/google/callback` address for each intended environment. For this project these are `https://campuscare-phi.vercel.app/auth/google/callback` and `http://127.0.0.1:3011/auth/google/callback`. Keep the existing email verification/recovery addresses. Use Production audience status for general access; Testing may restrict accounts. Branding verification is separate from enabling basic Google sign-in.
+
+The app starts OAuth through a same-origin server POST and Supabase PKCE. A short-lived, HttpOnly intent cookie records the selected role/organisation, is scoped to the Google callback, and is cleared on return. The callback exchanges the code, verifies the Supabase user, and checks current database membership. All return paths are fixed internal destinations. Cancellation, expired attempts, and account mismatches show a safe retry message. The app does not request offline Google access or Gmail/Drive permissions.
+
 ## Verification
 
 `npm run test:access` runs the real PostgreSQL permission functions in an isolated PGlite database. It checks organisation separation, role escalation, direct table access, pending/rejected workers, assignment ownership, reporter ownership, and repair transitions. This does not replace a real Supabase signup, email confirmation, login, and multi-user browser check.

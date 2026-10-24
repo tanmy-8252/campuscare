@@ -5,7 +5,7 @@ Campus maintenance reporting for Hacktober HackDays 2026. Students and staff rep
 ## Features
 
 - Phone-friendly student/staff and worker workspaces; an administrator dashboard on desktop and phone.
-- Verified email accounts with Admin, Student / Staff, and Worker login choices. The selected role and organisation must match the account's actual membership.
+- Verified email accounts and Google sign-in with Admin, Student / Staff, and Worker login choices. The selected role and organisation must match the account's actual membership.
 - Admin organisation registration and private join codes. Students/staff join immediately; workers require approval from their organisation's admin.
 - Server and database permission checks for organisation separation, worker assignments, and reporter confirmation.
 - Categories, campus zones, exact locations, priorities, related report suggestions, and support for existing reports.
@@ -37,6 +37,7 @@ If using the prepared local callback allowlist, start with `npm run dev -- --hos
 Checks:
 
 - `npm run test:access` — real PostgreSQL permission tests in an isolated PGlite database.
+- `npm run test:google` — OAuth intent expiry, internal return paths, and membership/worker-approval routing.
 - `npm run typecheck`
 - `npm run build`
 - `npm start`
